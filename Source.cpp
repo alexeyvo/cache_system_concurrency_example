@@ -40,7 +40,7 @@ int main()
         deps[1] = gen_domain_dep();
 
         // cache null data, we don't care for now
-        c.insert(deps, nullptr);
+        c.insert(std::to_string(rand()), nullptr, deps);
 
         inserts++;
       }

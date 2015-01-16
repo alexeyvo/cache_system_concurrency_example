@@ -1,17 +1,12 @@
 #include "Cache.h"
 
-#include <boost/algorithm/string/join.hpp>
 #include <exception>
 
-boost::hash<std::string> Cache::Hasher::str_hash;
-
-void Cache::insert(const std::vector<std::string> &deps, void *value) {
+void Cache::insert(const std::string name, void *value, const std::vector<std::string> &deps) {
   if (deps.size() != _deps_size)
     throw std::invalid_argument("Deps size should be " + std::to_string(_deps_size));
 
-  std::string key = boost::algorithm::join(deps, ",");
-
-  _storage.insert(std::make_pair(key, value));
+  _storage.insert(std::make_pair(name, value));
 
   auto add_deps = [&](key_to_dep_value_t deps_set) {
     for (auto i = deps.begin(); i != deps.end(); i++)
@@ -19,25 +14,25 @@ void Cache::insert(const std::vector<std::string> &deps, void *value) {
   };
 
   key_to_dep_t::accessor a;
-  if (_key_to_dep.find(a, key)) {
+  if (_key_to_dep.find(a, name)) {
     auto deps_set = a->second;
     add_deps(deps_set);
     a.release();
   } else {
     key_to_dep_value_t new_deps_set;
     add_deps(new_deps_set);
-    _key_to_dep.insert(std::make_pair(key, new_deps_set));
+    _key_to_dep.insert(std::make_pair(name, new_deps_set));
   }
 
   for (auto i = deps.begin(); i != deps.end(); i++) {
     dep_to_key_t::accessor a2;
     if (_dep_to_key.find(a2, *i)) {
       auto keys_set = a2->second;
-      keys_set.insert(std::make_pair(key, false));
+      keys_set.insert(std::make_pair(name, false));
       a2.release();
     } else {
       dep_to_key_value_t new_keys_set;
-      new_keys_set.insert(std::make_pair(key, false));
+      new_keys_set.insert(std::make_pair(name, false));
       _dep_to_key.insert(std::make_pair(*i, new_keys_set));
     }
   }

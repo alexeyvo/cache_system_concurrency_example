@@ -8,25 +8,12 @@
 
 class Cache
 {
-  /* takes set of dependensies and provides key */
-  struct Hasher {
-    static boost::hash<std::string> str_hash;
-
-    static size_t hash(const std::string &x) {
-      return str_hash(x);
-    }
-
-    static bool equal(const std::string &x, const std::string &y) {
-      return str_hash(x) == str_hash(y);
-    }
-  };
-
-  typedef tbb::concurrent_hash_map<std::string, void *, Hasher> storage_t;
+  typedef tbb::concurrent_hash_map<std::string, void *> storage_t;
   // we use bool type as stub cause de don't care about values they always false(there is no concurrent_hash_set class)
   // we just need to keep set of strings for each string key
   typedef tbb::concurrent_hash_map<std::string, bool> key_to_dep_value_t;
-  typedef tbb::concurrent_hash_map<std::string, key_to_dep_value_t, Hasher> key_to_dep_t;
-  typedef tbb::concurrent_hash_map<std::string, bool, Hasher> dep_to_key_value_t;
+  typedef tbb::concurrent_hash_map<std::string, key_to_dep_value_t> key_to_dep_t;
+  typedef tbb::concurrent_hash_map<std::string, bool> dep_to_key_value_t;
   typedef tbb::concurrent_hash_map<std::string, dep_to_key_value_t> dep_to_key_t;
 
   /* keeps cached data for each key */
@@ -53,7 +40,7 @@ class Cache
 public:
   Cache(uint8_t deps_size) : _deps_size(deps_size) {}
   ~Cache() {}
-  void insert(const std::vector<std::string> &deps, void *value);
+  void insert(const std::string name, void *value, const std::vector<std::string> &deps);
   // this will be private, for now will be public
   bool invalidate_cached_data(const std::string &dep);
 };
