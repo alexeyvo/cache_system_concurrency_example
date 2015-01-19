@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <boost/functional/hash.hpp>
 #include <tbb/concurrent_hash_map.h>
 
 class Cache
