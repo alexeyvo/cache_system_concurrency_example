@@ -1,4 +1,3 @@
-#include <string>
 #include <boost/thread/thread.hpp>
 #include <boost/atomic.hpp>
 
@@ -8,7 +7,7 @@
    just to test concurrency */
 
 const uint8_t DEPS_SIZE = 2,
-              INSERT_THREADS = 2;
+              INSERT_THREADS = 3;
 
 Cache c(DEPS_SIZE);
 boost::atomic<bool> done(false);
@@ -25,10 +24,9 @@ std::string gen_domain_dep() {
 int main()
 {
   boost::thread cache_invalidator([] {
-    while (!done) {
+    while (!done)
       if (c.invalidate_cached_data(gen_user_dep()))
         removes++;
-    }
   });
 
   boost::thread_group cache_inserters;
