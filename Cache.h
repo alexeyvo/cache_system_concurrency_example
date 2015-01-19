@@ -8,10 +8,9 @@ class Cache
   typedef tbb::concurrent_hash_map<std::string, void *> storage_t;
   // we use bool type as stub cause de don't care about values they always false(there is no concurrent_hash_set class)
   // we just need to keep set of strings for each string key
-  typedef tbb::concurrent_hash_map<std::string, bool> key_to_dep_value_t;
-  typedef tbb::concurrent_hash_map<std::string, key_to_dep_value_t> key_to_dep_t;
-  typedef tbb::concurrent_hash_map<std::string, bool> dep_to_key_value_t;
-  typedef tbb::concurrent_hash_map<std::string, dep_to_key_value_t> dep_to_key_t;
+  typedef tbb::concurrent_hash_map<std::string, bool> concurrent_hash_set;
+  typedef tbb::concurrent_hash_map<std::string, concurrent_hash_set> key_to_dep_t;
+  typedef tbb::concurrent_hash_map<std::string, concurrent_hash_set> dep_to_key_t;
 
   /* keeps cached data for each key */
   storage_t _storage;
@@ -37,7 +36,9 @@ class Cache
 public:
   Cache(uint8_t deps_size) : _deps_size(deps_size) {}
   ~Cache() {}
-  void insert(const std::string name, void *value, const std::vector<std::string> &deps);
+  bool insert(const std::string name, void *value, const std::vector<std::string> &deps);
+  bool remove(const std::string name);
   // this will be private, for now will be public
   bool invalidate_cached_data(const std::string &dep);
+  void print() const;
 };
