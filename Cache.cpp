@@ -49,6 +49,14 @@ bool Cache::remove(const std::string name) {
   return true;
 }
 
+void * Cache::find(const std::string name) {
+  storage_t::const_accessor a_storage;
+  if (!_storage.find(a_storage, name))
+    return nullptr;
+
+  return a_storage->second;
+}
+
 bool Cache::invalidate_cached_data(const std::string &dep_to_del) {
   dep_to_key_t::accessor a_dep_to_del;
   if (!_dep_to_key.find(a_dep_to_del, dep_to_del))

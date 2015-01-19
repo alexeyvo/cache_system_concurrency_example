@@ -38,6 +38,7 @@ public:
   ~Cache() {}
   bool insert(const std::string name, void *value, const std::vector<std::string> &deps);
   bool remove(const std::string name);
+  void * find(const std::string name);
   // this will be private, for now will be public
   bool invalidate_cached_data(const std::string &dep);
   void print() const;

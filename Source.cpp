@@ -10,8 +10,9 @@ const uint8_t DEPS_SIZE = 2,
               INSERT_THREADS = 2;
 
 Cache c(DEPS_SIZE);
+int cached_data_stub = 1;
 boost::atomic<bool> done(false), stop_insert(false);
-boost::atomic<size_t> inserts(0), invalidations(0), removes(0);
+boost::atomic<size_t> inserts(0), invalidations(0), removes(0), finds(0);
 
 std::string gen_user_dep() {
   return "users." + std::to_string(rand() % 64);
@@ -41,18 +42,25 @@ int main()
         deps[0] = gen_user_dep();
         deps[1] = gen_domain_dep();
 
-        // cache null data, we don't care for now
-        if (c.insert(gen_name(), nullptr, deps))
+        if (c.insert(gen_name(), &cached_data_stub, deps))
           inserts++;
       }
     });
 
   boost::thread_group cache_removers;
-  for (auto i = 0; i != 2; ++i)
+  for (auto i = 0; i != 1; ++i)
     cache_removers.create_thread([] {
       while (!done)
         if (c.remove(gen_name()) && !stop_insert)
           removes++;
+    });
+
+  boost::thread_group cache_finders;
+  for (auto i = 0; i != 2; ++i)
+    cache_finders.create_thread([] {
+      while (!done)
+        if (c.find(gen_name()) != nullptr && !stop_insert)
+          finds++;
     });
 
   boost::this_thread::sleep(boost::posix_time::milliseconds(5000));
@@ -63,8 +71,10 @@ int main()
   done = true;
   cache_invalidator.join();
   cache_removers.join_all();
+  cache_finders.join_all();
 
-  std::cout << inserts << "\t" << removes << "\t" << invalidations << "\n";
+  std::cout << "inserts: " << inserts << "\tremoves: " << removes << "\tfinds: " 
+            << finds << "\tinvalidations: " << invalidations << "\n";
 
   c.print();
 
