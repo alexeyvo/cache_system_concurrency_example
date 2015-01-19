@@ -8,21 +8,12 @@ void Cache::insert(const std::string name, void *value, const std::vector<std::s
 
   _storage.insert(std::make_pair(name, value));
 
-  auto add_deps = [&](key_to_dep_value_t &deps_set) {
-    for (auto i = deps.begin(); i != deps.end(); i++)
-      deps_set.insert(std::make_pair(*i, false));
-  };
-
   key_to_dep_t::accessor a_key_to_dep;
-  if (_key_to_dep.find(a_key_to_dep, name)) {
-    auto deps_set = a_key_to_dep->second;
-    add_deps(deps_set);
-    a_key_to_dep.release();
-  } else {
-    key_to_dep_value_t new_deps_set;
-    add_deps(new_deps_set);
-    _key_to_dep.insert(std::make_pair(name, new_deps_set));
-  }
+  key_to_dep_value_t new_deps_set;
+  _key_to_dep.insert(a_key_to_dep, std::make_pair(name, new_deps_set));
+  for (auto i = deps.begin(); i != deps.end(); i++)
+    a_key_to_dep->second.insert(std::make_pair(*i, false));
+  a_key_to_dep.release();
 
   for (auto i = deps.begin(); i != deps.end(); i++) {
     dep_to_key_t::accessor a_dep_to_key;
