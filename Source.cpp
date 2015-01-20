@@ -3,7 +3,7 @@
 #include <tbb/tick_count.h>
 #include <tbb/atomic.h>
 
-#include "Cache.h"
+#include "cache.h"
 
 /* example runs 1 thread that invalidates cache and multimple threads that insers data 
    just to test concurrency */
@@ -11,7 +11,7 @@
 const uint8_t DEPS_SIZE = 2,
               INSERT_THREADS = 2;
 
-Cache c(DEPS_SIZE);
+cnv::cache c(DEPS_SIZE);
 int cached_data_stub = 1;
 tbb::atomic<bool> done, stop_insert;
 tbb::atomic<size_t> inserts, invalidations, removes, finds;
