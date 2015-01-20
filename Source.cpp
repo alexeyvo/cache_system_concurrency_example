@@ -1,5 +1,7 @@
-#include <boost/thread/thread.hpp>
-#include <boost/atomic.hpp>
+#include <iostream>
+#include <tbb/tbb_thread.h>
+#include <tbb/tick_count.h>
+#include <tbb/atomic.h>
 
 #include "Cache.h"
 
@@ -11,32 +13,37 @@ const uint8_t DEPS_SIZE = 2,
 
 Cache c(DEPS_SIZE);
 int cached_data_stub = 1;
-boost::atomic<bool> done(false), stop_insert(false);
-boost::atomic<size_t> inserts(0), invalidations(0), removes(0), finds(0);
+tbb::atomic<bool> done, stop_insert;
+tbb::atomic<size_t> inserts, invalidations, removes, finds;
+
+static inline std::string to_string(int i) {
+  // msvc10 bug - need to cast
+  return std::to_string((long long)i);
+}
 
 std::string gen_user_dep() {
-  return "users." + std::to_string(rand() % 64);
+  return "users." + to_string(rand() % 64);
 }
 
 std::string gen_domain_dep() {
-  return "domains." + std::to_string(rand() % 8);
+  return "domains." + to_string(rand() % 8);
 }
 
 std::string gen_name() {
-  return std::to_string(rand() % 512);
+  return to_string(rand() % 512);
 }
 
 int main()
 {
-  boost::thread cache_invalidator([] {
+  tbb::tbb_thread cache_invalidator([] {
     while (!done)
       if (c.invalidate_cached_data(gen_user_dep()) && !stop_insert)
         invalidations++;
   });
 
-  boost::thread_group cache_inserters;
+  std::vector<tbb::tbb_thread> cache_inserters;
   for (auto i = 0; i != INSERT_THREADS; ++i)
-    cache_inserters.create_thread([] {
+    cache_inserters.push_back(tbb::tbb_thread([] {
       while (!stop_insert) {
         std::vector<std::string> deps(DEPS_SIZE);
         deps[0] = gen_user_dep();
@@ -45,33 +52,36 @@ int main()
         if (c.insert(gen_name(), &cached_data_stub, deps))
           inserts++;
       }
-    });
+    }));
 
-  boost::thread_group cache_removers;
+  std::vector<tbb::tbb_thread> cache_removers;
   for (auto i = 0; i != 1; ++i)
-    cache_removers.create_thread([] {
+    cache_removers.push_back(tbb::tbb_thread([] {
       while (!done)
         if (c.remove(gen_name()) && !stop_insert)
           removes++;
-    });
+    }));
 
-  boost::thread_group cache_finders;
+  std::vector<tbb::tbb_thread> cache_finders;
   for (auto i = 0; i != 2; ++i)
-    cache_finders.create_thread([] {
+    cache_finders.push_back(tbb::tbb_thread([] {
       while (!done)
         if (c.find(gen_name()) != nullptr && !stop_insert)
           finds++;
-    });
+    }));
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(5000));
+  tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(5.0));
   stop_insert = true;
-  cache_inserters.join_all();
+  for (auto i = cache_inserters.begin(); i != cache_inserters.end(); i++)
+    i->join();
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(2000));
+  tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(2.0));
   done = true;
   cache_invalidator.join();
-  cache_removers.join_all();
-  cache_finders.join_all();
+  for (auto i = cache_removers.begin(); i != cache_removers.end(); i++)
+    i->join();
+  for (auto i = cache_finders.begin(); i != cache_finders.end(); i++)
+    i->join();
 
   std::cout << "inserts: " << inserts << "\tremoves: " << removes << "\tfinds: " 
             << finds << "\tinvalidations: " << invalidations << "\n";

@@ -3,9 +3,14 @@
 #include <exception>
 #include <iostream>
 
+static inline std::string to_string(int i) {
+  // msvc10 bug - need to cast
+  return std::to_string((long long)i);
+}
+
 bool Cache::insert(const std::string name, void *value, const std::vector<std::string> &deps) {
   if (deps.size() != _deps_size)
-    throw std::invalid_argument("Deps size should be " + std::to_string(_deps_size));
+    throw std::invalid_argument("Deps size should be " + to_string(_deps_size));
 
   storage_t::accessor a_storage;
   if (!_storage.insert(a_storage, std::make_pair(name, value)))
