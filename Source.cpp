@@ -14,7 +14,7 @@ const uint8_t DEPS_SIZE = 2,
 cnv::cache c(DEPS_SIZE);
 int cached_data_stub = 1;
 tbb::atomic<bool> done, stop_insert;
-tbb::atomic<size_t> inserts, invalidations, removes, finds;
+tbb::atomic<size_t> inserts, invalidations, finds;
 
 static inline std::string to_string(int i) {
   // msvc10 bug - need to cast
@@ -54,14 +54,6 @@ int main()
       }
     }));
 
-  std::vector<tbb::tbb_thread> cache_removers;
-  for (auto i = 0; i != 1; ++i)
-    cache_removers.push_back(tbb::tbb_thread([] {
-      while (!done)
-        if (c.remove(gen_name()) && !stop_insert)
-          removes++;
-    }));
-
   std::vector<tbb::tbb_thread> cache_finders;
   for (auto i = 0; i != 2; ++i)
     cache_finders.push_back(tbb::tbb_thread([] {
@@ -78,13 +70,10 @@ int main()
   tbb::this_tbb_thread::sleep(tbb::tick_count::interval_t(2.0));
   done = true;
   cache_invalidator.join();
-  for (auto i = cache_removers.begin(); i != cache_removers.end(); i++)
-    i->join();
   for (auto i = cache_finders.begin(); i != cache_finders.end(); i++)
     i->join();
 
-  std::cout << "inserts: " << inserts << "\tremoves: " << removes << "\tfinds: " 
-            << finds << "\tinvalidations: " << invalidations << "\n";
+  std::cout << "inserts: " << inserts << "\tfinds: " << finds << "\tinvalidations: " << invalidations << "\n";
 
   c.print();
 

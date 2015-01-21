@@ -10,21 +10,16 @@ static inline std::string to_string(int i) {
 
 namespace cnv {
 
-  bool cache::insert(const std::string name, void *value, const std::vector<std::string> &deps) {
+  bool cache::insert(const std::string &name, const void *value, const std::vector<std::string> &deps) {
     if (deps.size() != _deps_size)
       throw std::invalid_argument("Deps size should be " + to_string(_deps_size));
 
+    // insert into storage and keep lock until method return
     storage_t::accessor a_storage;
     if (!_storage.insert(a_storage, std::make_pair(name, value)))
       return false;
 
-    // add deps
-    key_to_dep_t::accessor a_key_to_dep;
-    concurrent_hash_set new_deps_set;
-    _key_to_dep.insert(a_key_to_dep, std::make_pair(name, new_deps_set));
-    for (auto i = deps.begin(); i != deps.end(); i++)
-      a_key_to_dep->second.insert(std::make_pair(*i, false));
-
+    // insert dependencies for this name
     for (auto i = deps.begin(); i != deps.end(); i++) {
       concurrent_hash_set new_keys_set;
       dep_to_key_t::accessor a_dep_to_key;
@@ -32,10 +27,25 @@ namespace cnv {
       a_dep_to_key->second.insert(std::make_pair(name, false));
     }
 
+    // insert additional data to backtrack invalid dependency entries
+    key_to_dep_t::accessor a_key_to_dep;
+    concurrent_hash_set new_deps_set;
+    _key_to_dep.insert(a_key_to_dep, std::make_pair(name, new_deps_set));
+    for (auto i = deps.begin(); i != deps.end(); i++)
+      a_key_to_dep->second.insert(std::make_pair(*i, false));
+
     return true;
   }
 
-  bool cache::remove(const std::string name) {
+  void * cache::find(const std::string &name) {
+    storage_t::const_accessor a_storage;
+    if (!_storage.find(a_storage, name))
+      return nullptr;
+
+    return (void *)a_storage->second;
+  }
+
+  bool cache::remove(const std::string &name) {
     storage_t::accessor a_storage;
     if (!_storage.find(a_storage, name))
       return false;
@@ -56,20 +66,13 @@ namespace cnv {
     return true;
   }
 
-  void * cache::find(const std::string name) {
-    storage_t::const_accessor a_storage;
-    if (!_storage.find(a_storage, name))
-      return nullptr;
-
-    return a_storage->second;
-  }
-
-  bool cache::invalidate_cached_data(const std::string &dep_to_del) {
+  bool cache::invalidate_cached_data(const std::string &dependency) {
     dep_to_key_t::accessor a_dep_to_del;
-    if (!_dep_to_key.find(a_dep_to_del, dep_to_del))
+    if (!_dep_to_key.find(a_dep_to_del, dependency))
       return false;
 
-    concurrent_hash_set keys_to_del(a_dep_to_del->second);
+    concurrent_hash_set keys_to_del = a_dep_to_del->second;
+    //_dep_to_key.erase(a_dep_to_del);
     a_dep_to_del.release();
 
     for (auto i = keys_to_del.begin(); i != keys_to_del.end(); i++)
@@ -78,6 +81,7 @@ namespace cnv {
     return true;
   }
 
+#ifdef _DEBUG
   void cache::print() const {
     for (auto i = _storage.begin(); i != _storage.end(); i++)
       std::cout << i->first << "\t";
@@ -97,5 +101,6 @@ namespace cnv {
       std::cout << "\n";
     }
   }
+#endif
 
 }
