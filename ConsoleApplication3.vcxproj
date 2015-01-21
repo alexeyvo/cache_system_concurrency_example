@@ -41,13 +41,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>d:\libs\tbb43_20141204oss\include;D:\libs\boost_1_57_0;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\libs\boost_1_57_0\lib32-msvc-10.0;d:\libs\tbb43_20141204oss\lib\ia32\vc10;C:\Program Files %28x86%29\Visual Leak Detector\lib\Win32;$(LibraryPath)</LibraryPath>
+    <IncludePath>d:\libs\tbb43_20141204oss\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\libs\tbb43_20141204oss\lib\ia32\vc10;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>d:\libs\tbb43_20141204oss\include;D:\libs\boost_1_57_0;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\libs\boost_1_57_0\lib32-msvc-10.0;d:\libs\tbb43_20141204oss\lib\ia32\vc10;C:\Program Files %28x86%29\Visual Leak Detector\lib\Win32;$(LibraryPath)</LibraryPath>
+    <IncludePath>d:\libs\tbb43_20141204oss\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\libs\tbb43_20141204oss\lib\ia32\vc10;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
