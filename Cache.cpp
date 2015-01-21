@@ -81,7 +81,6 @@ namespace cnv {
     return true;
   }
 
-#ifdef _DEBUG
   void cache::print() const {
     for (auto i = _storage.begin(); i != _storage.end(); i++)
       std::cout << i->first << "\t";
@@ -101,6 +100,5 @@ namespace cnv {
       std::cout << "\n";
     }
   }
-#endif
 
 }

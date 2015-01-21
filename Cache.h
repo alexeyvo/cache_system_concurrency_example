@@ -52,9 +52,7 @@ namespace cnv {
     void * find(const std::string &name);
     // this will be private, for now will be public
     bool invalidate_cached_data(const std::string &dependency);
-#ifdef _DEBUG
     void print() const;
-#endif
   };
 
 }
