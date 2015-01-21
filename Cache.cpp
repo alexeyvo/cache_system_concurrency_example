@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <iostream>
+#include <cassert>
 
 static inline std::string to_string(int i) {
   // msvc10 bug - need to cast
@@ -56,8 +57,10 @@ namespace cnv {
       for (auto j = a_key_to_dep->second.begin(); j != a_key_to_dep->second.end(); j++) {
         auto dep = j->first;
         dep_to_key_t::accessor a_dep_to_key;
-        if (_dep_to_key.find(a_dep_to_key, dep))
-          a_dep_to_key->second.erase(name);
+        if (_dep_to_key.find(a_dep_to_key, dep) &&
+            a_dep_to_key->second.erase(name) &&
+            a_dep_to_key->second.empty())
+          _dep_to_key.erase(a_dep_to_key);
       }
       _key_to_dep.erase(a_key_to_dep);
     }
@@ -71,8 +74,8 @@ namespace cnv {
     if (!_dep_to_key.find(a_dep_to_del, dependency))
       return false;
 
-    concurrent_hash_set keys_to_del = a_dep_to_del->second;
-    //_dep_to_key.erase(a_dep_to_del);
+    concurrent_hash_set keys_to_del(a_dep_to_del->second);
+    _dep_to_key.erase(a_dep_to_del);
     a_dep_to_del.release();
 
     for (auto i = keys_to_del.begin(); i != keys_to_del.end(); i++)
@@ -81,24 +84,10 @@ namespace cnv {
     return true;
   }
 
-  void cache::print() const {
-    for (auto i = _storage.begin(); i != _storage.end(); i++)
-      std::cout << i->first << "\t";
-    std::cout << "\n\n";
-
-    for (auto i = _key_to_dep.begin(); i != _key_to_dep.end(); i++) {
-      std::cout << i->first << ": ";
-      for (auto j = i->second.begin(); j != i->second.end(); j++)
-        std::cout << i->first << "\t";
-      std::cout << "\n";
-    }
-
-    for (auto i = _dep_to_key.begin(); i != _dep_to_key.end(); i++) {
-      std::cout << i->first << ": ";
-      for (auto j = i->second.begin(); j != i->second.end(); j++)
-        std::cout << i->first << "\t";
-      std::cout << "\n";
-    }
+  void cache::check() const {
+    assert(_storage.size() == 0);
+    assert(_key_to_dep.size() == 0);
+    assert(_dep_to_key.size() == 0);
   }
 
 }
